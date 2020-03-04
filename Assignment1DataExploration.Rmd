@@ -1,0 +1,218 @@
+---
+title: "Data Preparation - Assignment 1"
+author: "Sumanth"
+date: "2/23/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+### A Comprehesive Data Exploration and Analysis on CSV and JSON files:
+
+The Open Data 500 is the first comprehensive study of U.S. companies that use open government data to
+generate new business and develop new products and services. Open Data is free, public data that can be
+used to launch commercial and nonprofit ventures, conduct research, make data-driven decisions, and solve
+complex problems
+
+In this assignment you will be analyzing two datasets - US_agency.csv and US_companies.csv. You can download the data from the website:
+https://www.opendata500.com/
+
+* Libraries used : 3
+    + dplyr
+    + tidyverse
+    + jsonlite
+```{r, include=FALSE,message = FALSE}
+library(dplyr)
+library(tidyverse)
+library(jsonlite)
+```
+
+Loading the dataset :
+```{r}
+us_ag <- read_csv("us_agencies.csv")
+str(us_ag)
+us_co<- read_csv("us_companies.csv")
+str(us_co)
+```
+*The load time in reading the dataset using read_csv of tidyverse package is faster compared to read.csv. The main advantage of this function is it parses the file while loading to environment.*
+
+Tasks to explore the dataset and answering the following questions:
+
+**1. Are there any missing columns?**
+
+On a general exploration through data, there is no missing columns. However if the datasets are related, their should be a primary key. There is no primary/unique column in us_agencies dataset which concludes a missing column.
+
+**2. Are there any missing column names or errors in the column names? If so, name those columns.**
+```{r}
+colnames(us_ag)
+colnames(us_co)
+```
+There are no missing columns or errors in the column names. Every column name carries substantial meaning for understanding to its column values.
+
+**3. Are there any values in the columns missing?**
+```{r}
+#total no of missing values and missing values in each column
+sum(is.na(us_ag))
+sapply(us_ag, function(x) sum(is.na(x)))  # In us_agencies
+sum(is.na(us_co))
+sapply(us_co, function(x) sum(is.na(x)))  # In us_companies
+```
+**YES**, A total of 2718 and 2315 missing values are there in us_agencies and us_companies dataset. we can see the total missing values in each column. in Us_agencies, column 5 and column 9 has the highest number of missing values. In us_companies, social_impact, example_uses, financial_info, source_count has highest number of missing values.
+
+4. How is data organized in each column? Is it properly organized?
+
+The data is not organized at various columns of the us_agencies and us_companies. Has too many categorical values and has many non-significant columns.
+
+**5. Is data in the proper shape for further analysis? If not, why? Explain.**
+
+Though the data is structured, It still needs to a lot of pre-processing for any analysis. The data is not in proper shape and has a lot of missing values.
+
+* In Us_companies, 
+   + Column last_updated needs to be parsed.
+   + Financial_info column has aa lot of unwanted tags and characters
+   + data_impacts column is not organized and has unreadable characters
+   + Coulmns source_count & full_time_employees has values with incorrectly feeded data and needs to be parsed
+   + A lot of missing values in columns
+  
+* In us_agencies, 
+   + used_by_fte column needs to be parsed.
+
+**6. How will you fix this dataset? Describe the methods you will use to fix this dataset for further analysis? It can be missing values, NAs, etc. (OPTIONAL: Uploading clean dataset)**
+
+* Any dataset with too many missing values will not give any significant/Actionable insights. Usually a safe maximum threshold is 5% missing values, NA's of the total in each column is followed for further any analysis on the datasets. 
+* We need to make sure there are no duplicates in the dataset.
+```{r}
+#Dataframe without Duplicates
+us_ag_noDup<-us_ag %>% distinct()
+us_co_noDup<-us_co %>% distinct()
+```
+* If missing data for a certain feature or sample is more than 5% then we probably should leave that feature or sample out. We therefore check for features (columns) and samples (rows) where more than 5% of the data is missing using a simple function
+```{r}
+#Percentage of missing values at each column
+us_ag_NoMissing <- function(x){sum(is.na(x))/length(x)*100}
+apply(us_ag_noDup,2,us_ag_NoMissing)
+
+us_co_NoMissing <- function(x){sum(is.na(x))/length(x)*100}
+apply(us_co_noDup,2,us_co_NoMissing)
+```
+As we can see, there are lot of columns with missing values more than 5%
+
+* There are alot of packages/libraries that deals with the imputation of missing values. One can also follow the conventional ways of imputation without using packages/libraries for numerical variables. 
+* For mising values, five powerful R packages namely 
+    + MICE
+    + Amelia
+    + missForest
+    + Hmisc
+    + mi
+
+*source: https://www.analyticsvidhya.com/blog/2016/03/tutorial-powerful-packages-imputing-missing-values/*
+
+**7. How are the two datasets linked to each other? Is there a common "primary key" to connect the two datasets?**
+
+As mentioned earlier, There is no Unique row identifier to access the data to perform furtherr analysis using these two datasets.  
+
+## Exercise 2:
+
+JSON (JavaScript Object Notation) is a most commonly used data format today and as a data scientist, you
+must know how to access JSON data sets. JSON is easy for machines to parse and generate. "It is based on
+a subset of the JavaScript Programming Language Standard ECMA-262 3rd Edition - December 1999.
+JSON is a text format that is completely language independent [JSON.ORG]."
+
+For this case study, you will parse JSON file, which has city traffic details. "Average Daily Traffic (ADT)"
+counts are analogous to a census count of vehicles on city streets. These counts provide a close
+approximation to the actual number of vehicles passing through a given location on an average weekday.
+Since it is not possible to count every vehicle on every city street, sample counts are taken along larger
+streets to get an estimate of traffic on half-mile or one-mile street segments. ADT counts are used by city
+planners, transportation engineers, real-estate developers, marketers and many others for myriad planning
+and operational purposes. Data Owner: Transportation. Time Period: 2006. Frequency: A citywide count is 
+taken approximately every 10 years. A limited number of traffic counts will be taken and added to the list
+periodically [https://catalog.data.gov/]"
+
+ **1.How many variables are in the dataset?**
+```{r}
+# Convert JSON file to a data frame.
+ChigoTraffic <- fromJSON("ChicagoTraffic.json")
+# prints Total variables
+print(nrow(ChigoTraffic$meta$view$columns))
+```
+We have a total of 23 variables in the metadata that concerns with the listed data in json file
+
+**2. Name all the variables?**
+```{r}
+# Prints Column names
+print(ChigoTraffic$meta$view$columns$name)
+```
+
+**3. What is the total traffic of vehicles on 100th street to 115th street?**
+```{r}
+# Storing Data values to a variable
+CT_data<-ChigoTraffic$data
+# The total traffic of vehicles on 100th street to 115th street?
+for(i in 1:1279){
+  if(CT_data[[i]][[11]] == "100th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+  }
+  if(CT_data[[i]][[11]] == "101th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+  }
+  if(CT_data[[i]][[11]] == "102th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+  }
+  if(CT_data[[i]][[11]] == "103th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "104th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "105th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "106th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+   if(CT_data[[i]][[11]] == "107th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "108th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "109th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "110th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "111th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "112th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "113th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "114th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+  if(CT_data[[i]][[11]] == "115th St"){
+    print(as.numeric(CT_data[[i]][[13]]))
+    }
+}
+```
+As we can see the traffic volume at each street in the output. The total volume of traffic between 100th Street and 115th Street is **264,000**
+
+**4. What is the total traffic of vehicles on geolocations, (41.651861, -87.54501) and (41.66836, -87.620176)**
+```{r}
+for(j in 1:1279){
+  if(CT_data[[j]][[15]]=="41.651861" && CT_data[[j]][[16]]== "-87.54501"){t1<-as.numeric(CT_data[[j]][[13]])}
+  if(CT_data[[j]][[15]]=="41.66836" && CT_data[[j]][[16]]== "-87.620176"){t2<-as.numeric(CT_data[[j]][[13]])}
+}
+Total_Traffic=t1+t2
+print(Total_Traffic)
+```
+The Total traffic on the given geolocations is 13600.
+
+
+
+
+
+
